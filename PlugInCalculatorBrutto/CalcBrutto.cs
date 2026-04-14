@@ -66,7 +66,7 @@ namespace PlugIn
 
         public string Description
         {
-            get { return "Bruttobetrag auf Betrag + einem Prozentsatz berechnen"; }
+            get { return "Bruttobetrag, auf einen Betrag + einem Prozentsatz berechnen"; }
         }
 
         public Modulname Modul

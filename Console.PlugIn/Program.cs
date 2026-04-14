@@ -30,7 +30,7 @@ namespace Console.PlugIn
     {
         public static HashSet<IPlugIn> Plugins { get; } = new();
         private static BufferedFileSystemWatcher bfsw;
-        private static string path = @"c:\_DownLoads\";
+        private static int countPlugIns;
 
 
         public Program()
@@ -40,11 +40,21 @@ namespace Console.PlugIn
         }
         private static void Main(string[] args)
         {
+            string currentDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            PlugInPath = Path.Combine(new DirectoryInfo(currentDirectory).Parent.Parent.Parent.FullName, "PlugIns");
+            if (Directory.Exists(PlugInPath) == false)
+            {
+                Directory.CreateDirectory(PlugInPath);
+            }
+
             CMenu mainMenu = new CMenu("PlugIn Reader");
             mainMenu.AddItem("Start PlugIn Reader", MenuPoint1);
+            mainMenu.AddItem("PlugIn ausführen", MenuPoint2);
             mainMenu.AddItem("Beenden", () => ApplicationExit());
             mainMenu.Show();
         }
+
+        internal static string PlugInPath { get; private set; }
 
         private static void ApplicationExit()
         {
@@ -55,7 +65,12 @@ namespace Console.PlugIn
         {
             Console.Clear();
 
-            bfsw = new BufferedFileSystemWatcher(path);
+            Console.WriteLine($"PlugIn Reader gestartet; Verzeichnis: {PlugInPath}", ConsoleColor.Green);
+
+            /* Lesen der bereits vorhandenen PlugIns */
+            ReadPlugIn();
+
+            bfsw = new BufferedFileSystemWatcher(PlugInPath);
             WeakEventManager<BufferedFileSystemWatcher, FileSystemEventArgs>.AddHandler(bfsw, "Created", OnPlugInReader);
             WeakEventManager<BufferedFileSystemWatcher, FileSystemEventArgs>.AddHandler(bfsw, "Deleted", OnPlugInReader);
             bfsw.SetBufferedChangeTypes(BufferedChangeTypes.Created | BufferedChangeTypes.Deleted);
@@ -64,11 +79,56 @@ namespace Console.PlugIn
             Console.Wait();
         }
 
+        private static void MenuPoint2()
+        {
+            Console.Clear();
+
+            if (Plugins.Count > 0)
+            {
+                Console.WriteLine($"Anzahl Plugins: {CountPlugIns()}", ConsoleColor.Green);
+                foreach (var plugin in Plugins)
+                {
+                    decimal result = plugin.Calculate(100,19);
+                    Console.WriteLine(plugin.ShortDescription, ConsoleColor.Yellow);
+                    Console.WriteLine(result.ToString("#,00"), ConsoleColor.Yellow);
+                }
+            }
+
+            Console.Wait();
+        }
+
+        private static int CountPlugIns()
+        {
+           return Plugins.Count;
+        }
+
         private static void ReadPlugIn()
         {
             try
             {
+                IEnumerable<string> plugIns = MultiEnumerateFiles(PlugInPath, "*.dll");
+                if (plugIns != null)
+                {
+                    foreach (string file in plugIns)
+                    {
+                        Assembly assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(file);
+                        if (assembly != null)
+                        {
+                            var types = assembly.GetTypes().Where(t => typeof(IPlugIn).IsAssignableFrom(t) && t.IsInterface == false);
 
+                            foreach (var type in types)
+                            {
+                                if (Activator.CreateInstance(type) is IPlugIn plugin)
+                                {
+                                    if (Plugins.Contains(plugin) == false)
+                                    {
+                                        Plugins.Add(plugin);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -76,9 +136,26 @@ namespace Console.PlugIn
             }
         }
 
+        private static IEnumerable<string> MultiEnumerateFiles(string path, string patterns)
+        {
+            EnumerationOptions eo = new EnumerationOptions();
+            eo.RecurseSubdirectories = true;
+            eo.IgnoreInaccessible = true;
+            eo.RecurseSubdirectories = true; /*wichtige Option, wenn die dateien auf einem Netzwerkpfad liegen */
+            eo.ReturnSpecialDirectories = false;
+
+            foreach (var pattern in patterns.Split('|'))
+            {
+                foreach (var file in Directory.EnumerateFiles(path, pattern, eo))
+                {
+                    yield return file;
+                }
+            }
+        }
+
         private static void OnPlugInReader(object sender, FileSystemEventArgs e)
         {
-            string file = Path.Combine(path, e.Name);
+            string file = Path.Combine(PlugInPath, e.Name);
             WatcherChangeTypes changeType = e.ChangeType;
             Console.WriteLine($"Read PlugIn '{file}' (ChangeType: {changeType})");
             try
