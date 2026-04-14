@@ -26,9 +26,8 @@ namespace PlugIn
 {
     using Console.PlugInContract;
 
-    public class CalcBrutto : IPlugIn
+    public abstract class PlugInInfo : IPlugIn
     {
-
         public Guid Id
         {
             get { return new Guid("B1F8C9D2-3E4A-4F5B-9A6C-7D8E9F0A1B2C"); }
@@ -74,7 +73,12 @@ namespace PlugIn
             get { return Modulname.Brutto; }
         }
 
-        public decimal Calculate(decimal basisBetrag, decimal prozentSatz)
+        public abstract decimal Calculate(decimal basisBetrag, decimal prozentSatz);
+    }
+
+    public class CalcBrutto : PlugInInfo
+    {
+        public override decimal Calculate(decimal basisBetrag, decimal prozentSatz)
         {
             decimal steuerBetrag = basisBetrag * (prozentSatz / 100);
             return basisBetrag + steuerBetrag; 

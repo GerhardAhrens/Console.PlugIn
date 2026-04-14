@@ -16,11 +16,8 @@
 // </summary>
 //-----------------------------------------------------------------------
 
-namespace Console.PlugIn
+namespace System
 {
-    /* Imports from NET Framework */
-    using System;
-
     internal static class ConsoleExtensions
     {
         // Erstelle Extension für den Typ String
@@ -51,16 +48,32 @@ namespace Console.PlugIn
                 return result;
             }
 
-            public static void WriteLine(string text, ConsoleColor setColor = ConsoleColor.White)
+            public static void WriteText(string text, ConsoleColor setColor = ConsoleColor.White)
             {
                 ConsoleColor defaultColor = Console.ForegroundColor;
+                bool defaultCursor = Console.CursorVisible;
+
                 Console.ForegroundColor = setColor;
                 Console.CursorVisible = false;
 
                 Console.WriteLine(text);
 
                 Console.ForegroundColor = defaultColor;
-                Console.CursorVisible = true;
+                Console.CursorVisible = defaultCursor;
+            }
+
+            public static void Line(char lineSymbol = '-', ConsoleColor setColor = ConsoleColor.White)
+            {
+                ConsoleColor defaultColor = Console.ForegroundColor;
+                bool defaultCursor = Console.CursorVisible;
+
+                Console.ForegroundColor = setColor;
+                Console.CursorVisible = false;
+
+                Console.WriteLine(new string(lineSymbol, Console.WindowWidth));
+
+                Console.ForegroundColor = defaultColor;
+                Console.CursorVisible = defaultCursor;
             }
         }
     }

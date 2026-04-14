@@ -1,9 +1,12 @@
 <Solution>
   <Folder Name="/_Doc/">
+    <File Path="Console.PlugIn_Start.png" />
     <File Path="LICENSE.txt" />
     <File Path="README.md" />
   </Folder>
   <Project Path="Console.PlugIn/Console.PlugIn.csproj" />
   <Project Path="Console.PlugInContract/Console.PlugInContract.csproj" Id="39e9368d-441d-45f3-892a-01fc13141374" />
   <Project Path="PlugInCalculatorBrutto/PlugInCalculatorBrutto.csproj" Id="ae16ec04-b520-461f-adc1-dc30b14d0c0e" />
+  <Project Path="PlugInCalculatorMinus/PlugInCalculatorMinus.csproj" Id="495744f3-de7f-40c7-9450-0b7a99351243" />
+  <Project Path="PlugInCalculatorPlus/PlugInCalculatorPlus.csproj" Id="230df623-ad75-44f5-8d71-56010867b751" />
 </Solution>

@@ -20,6 +20,7 @@ namespace Console.PlugIn
 {
     /* Imports from NET Framework */
     using System;
+    using System.Globalization;
     using System.Reflection;
     using System.Runtime.Loader;
     using System.Windows;
@@ -30,7 +31,6 @@ namespace Console.PlugIn
     {
         public static HashSet<IPlugIn> Plugins { get; } = new();
         private static BufferedFileSystemWatcher bfsw;
-        private static int countPlugIns;
 
 
         public Program()
@@ -65,7 +65,7 @@ namespace Console.PlugIn
         {
             Console.Clear();
 
-            Console.WriteLine($"PlugIn Reader gestartet; Verzeichnis: {PlugInPath}", ConsoleColor.Green);
+            Console.WriteText($"PlugIn Reader gestartet; Verzeichnis: {PlugInPath}", ConsoleColor.Green);
 
             /* Lesen der bereits vorhandenen PlugIns */
             ReadPlugIn();
@@ -85,12 +85,14 @@ namespace Console.PlugIn
 
             if (Plugins.Count > 0)
             {
-                Console.WriteLine($"Anzahl Plugins: {CountPlugIns()}", ConsoleColor.Green);
-                foreach (var plugin in Plugins)
+                Console.WriteText($"Anzahl Plugins: {CountPlugIns()}", ConsoleColor.Green);
+                Console.Line('-');
+                foreach (IPlugIn plugin in Plugins)
                 {
                     decimal result = plugin.Calculate(100,19);
-                    Console.WriteLine(plugin.ShortDescription, ConsoleColor.Yellow);
-                    Console.WriteLine(result.ToString("#,00"), ConsoleColor.Yellow);
+                    Console.WriteText(plugin.ShortDescription, ConsoleColor.Yellow);
+                    Console.WriteText($"Ergebnis aus {plugin.Modul}; {result.ToString("#,00", CultureInfo.CurrentCulture)}", ConsoleColor.Yellow);
+                    Console.Line('-');
                 }
             }
 
@@ -109,25 +111,29 @@ namespace Console.PlugIn
                 IEnumerable<string> plugIns = MultiEnumerateFiles(PlugInPath, "*.dll");
                 if (plugIns != null)
                 {
-                    foreach (string file in plugIns)
+                    foreach (string file in plugIns.AsParallel())
                     {
                         Assembly assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(file);
                         if (assembly != null)
                         {
                             var types = assembly.GetTypes().Where(t => typeof(IPlugIn).IsAssignableFrom(t) && t.IsInterface == false);
 
-                            foreach (var type in types)
+                            foreach (Type type in types.AsParallel())
                             {
-                                if (Activator.CreateInstance(type) is IPlugIn plugin)
+                                if (type.IsAbstract == false)
                                 {
-                                    if (Plugins.Contains(plugin) == false)
+                                    if (Activator.CreateInstance(type) is IPlugIn plugin)
                                     {
                                         Plugins.Add(plugin);
+                                        Console.WriteText($"Load PlugIn '{Path.GetFileName(file)}'; (Modul: {plugin.Modul})", ConsoleColor.Yellow);
+                                        Console.Line('-');
                                     }
                                 }
                             }
                         }
                     }
+
+                    Console.WriteText($"Anzahl Plugins: {CountPlugIns()}", ConsoleColor.Green);
                 }
             }
             catch (Exception ex)
@@ -157,7 +163,7 @@ namespace Console.PlugIn
         {
             string file = Path.Combine(PlugInPath, e.Name);
             WatcherChangeTypes changeType = e.ChangeType;
-            Console.WriteLine($"Read PlugIn '{file}' (ChangeType: {changeType})");
+
             try
             {
                 Assembly assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(file);
@@ -165,20 +171,27 @@ namespace Console.PlugIn
                 {
                     var types = assembly.GetTypes().Where(t => typeof(IPlugIn).IsAssignableFrom(t) && t.IsInterface == false);
 
-                    foreach (var type in types)
+                    foreach (var type in types.AsParallel())
                     {
-                        if (Activator.CreateInstance(type) is IPlugIn plugin)
+                        if (type.IsAbstract == false)
                         {
-                            if (Plugins.Contains(plugin) == false)
+                            if (Activator.CreateInstance(type) is IPlugIn plugin)
                             {
-                                Plugins.Add(plugin);
-                            }
-                            else
-                            {
-                                Console.WriteLine($"PlugIn '{plugin.Description}' (Version: {plugin.Version}) ist bereits geladen.");
+                                if (Plugins.Add(plugin) == false)
+                                {
+                                    Console.WriteText($"PlugIn '{plugin.Description}' (Version: {plugin.Version}) ist bereits geladen.", ConsoleColor.Red);
+                                    Console.Line('-');
+                                }
+                                else
+                                {
+                                    Console.WriteText($"Read PlugIn '{file}' (ChangeType: {changeType})", ConsoleColor.Yellow);
+                                    Console.Line('-');
+                                }
                             }
                         }
                     }
+
+                    Console.WriteText($"Anzahl Plugins: {CountPlugIns()}", ConsoleColor.Green);
                 }
             }
             catch (Exception ex)
@@ -186,6 +199,5 @@ namespace Console.PlugIn
                 string errorText = $"Fehler: {ex.Message}";
             }
         }
-
     }
 }
