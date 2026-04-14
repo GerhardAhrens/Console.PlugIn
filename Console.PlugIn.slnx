@@ -4,4 +4,6 @@
     <File Path="README.md" />
   </Folder>
   <Project Path="Console.PlugIn/Console.PlugIn.csproj" />
+  <Project Path="Console.PlugInContract/Console.PlugInContract.csproj" Id="39e9368d-441d-45f3-892a-01fc13141374" />
+  <Project Path="PlugInCalculatorBrutto/PlugInCalculatorBrutto.csproj" Id="ae16ec04-b520-461f-adc1-dc30b14d0c0e" />
 </Solution>

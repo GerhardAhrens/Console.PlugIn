@@ -10,10 +10,20 @@
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
     <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
     <EnableNETAnalyzers>True</EnableNETAnalyzers>
+    <AssemblyVersion>1.0.2026.1</AssemblyVersion>
+    <FileVersion>1.0.2026.1</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <Content Include="Resources\Console.Template.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Features\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Console.PlugInContract\Console.PlugInContract.csproj" />
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">

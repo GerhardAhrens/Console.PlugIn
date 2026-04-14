@@ -22,4 +22,4 @@ der Source ist soll auch einfache Art und Weise die Funktionen eines Features ze
 
 # Versionshistorie
 
-![NET](https://img.shields.io/badge/NET-10.0-green.svg)
+![Version](https://img.shields.io/badge/Version-1.0.2026.0-yellow.svg)

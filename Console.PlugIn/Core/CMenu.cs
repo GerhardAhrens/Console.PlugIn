@@ -17,12 +17,13 @@ namespace Console.PlugIn
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Text;
 
     public class CMenu
     {
         private readonly List<MenuItem> _items = new();
-        private int _selectedIndex = 0;
+        private int _selectedIndex;
         private readonly string _title;
         private CMenu _parent;
 
@@ -95,7 +96,7 @@ namespace Console.PlugIn
                 }
                 else
                 {
-                    char input = char.ToUpper(keyInfo.KeyChar);
+                    char input = char.ToUpper(keyInfo.KeyChar, CultureInfo.CurrentCulture);
 
                     for (int i = 0; i < this._items.Count; i++)
                     {
@@ -142,7 +143,7 @@ namespace Console.PlugIn
             this._items[this._selectedIndex].Action.Invoke();
         }
 
-        private class MenuItem
+        private sealed class MenuItem
         {
             public string Text { get; }
             public Action Action { get; }

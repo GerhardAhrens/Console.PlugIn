@@ -20,9 +20,19 @@ namespace Console.PlugIn
 {
     /* Imports from NET Framework */
     using System;
+    using System.Reflection;
+    using System.Runtime.Loader;
+    using System.Windows;
+
+    using Console.PlugInContract;
 
     public class Program
     {
+        public static HashSet<IPlugIn> Plugins { get; } = new();
+        private static BufferedFileSystemWatcher bfsw;
+        private static string path = @"c:\_DownLoads\";
+
+
         public Program()
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
@@ -30,13 +40,8 @@ namespace Console.PlugIn
         }
         private static void Main(string[] args)
         {
-            CMenu unterMenu = new CMenu("Untermenü");
-            unterMenu.AddItem("Untermenüpunkt 1", () => UnterMenuPoint("A"), "🖥");
-            unterMenu.AddItem("Untermenüpunkt 2", () => UnterMenuPoint("B"), "🔊");
-
-            CMenu mainMenu = new CMenu("Hauptmenü");
-            mainMenu.AddItem("Auswahl Menüpunkt 1", MenuPoint1);
-            mainMenu.AddSubMenu("Einstellungen", unterMenu, "⚙");
+            CMenu mainMenu = new CMenu("PlugIn Reader");
+            mainMenu.AddItem("Start PlugIn Reader", MenuPoint1);
             mainMenu.AddItem("Beenden", () => ApplicationExit());
             mainMenu.Show();
         }
@@ -50,14 +55,60 @@ namespace Console.PlugIn
         {
             Console.Clear();
 
-            CMenu.Wait();
+            bfsw = new BufferedFileSystemWatcher(path);
+            WeakEventManager<BufferedFileSystemWatcher, FileSystemEventArgs>.AddHandler(bfsw, "Created", OnPlugInReader);
+            WeakEventManager<BufferedFileSystemWatcher, FileSystemEventArgs>.AddHandler(bfsw, "Deleted", OnPlugInReader);
+            bfsw.SetBufferedChangeTypes(BufferedChangeTypes.Created | BufferedChangeTypes.Deleted);
+            bfsw.StartFileSystemWatcher();
+
+            Console.Wait();
         }
 
-        private static void UnterMenuPoint(string param)
+        private static void ReadPlugIn()
         {
-            Console.Clear();
+            try
+            {
 
-            CMenu.Wait(param);
+            }
+            catch (Exception ex)
+            {
+                string errorText = $"Fehler: {ex.Message}";
+            }
         }
+
+        private static void OnPlugInReader(object sender, FileSystemEventArgs e)
+        {
+            string file = Path.Combine(path, e.Name);
+            WatcherChangeTypes changeType = e.ChangeType;
+            Console.WriteLine($"Read PlugIn '{file}' (ChangeType: {changeType})");
+            try
+            {
+                Assembly assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(file);
+                if (assembly != null)
+                {
+                    var types = assembly.GetTypes().Where(t => typeof(IPlugIn).IsAssignableFrom(t) && t.IsInterface == false);
+
+                    foreach (var type in types)
+                    {
+                        if (Activator.CreateInstance(type) is IPlugIn plugin)
+                        {
+                            if (Plugins.Contains(plugin) == false)
+                            {
+                                Plugins.Add(plugin);
+                            }
+                            else
+                            {
+                                Console.WriteLine($"PlugIn '{plugin.Description}' (Version: {plugin.Version}) ist bereits geladen.");
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                string errorText = $"Fehler: {ex.Message}";
+            }
+        }
+
     }
 }
